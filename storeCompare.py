@@ -1,7 +1,4 @@
-# api_caller.py
-
 import requests
-from pprint import pprint
 
 def call_api(search_term):
     payload = {
@@ -26,26 +23,35 @@ def call_api(search_term):
 def find_lowest_price_item(api_response):
     lowest_price = float('inf')  # Set to infinity initially
     lowest_price_item = None
+    total_price = 0
+    count = 0
+    imgurl = ""
 
     # Iterate over the results in the JSON response
     for result in api_response['results']:
         for item in result['content']['results']['amazons_choices'] + result['content']['results']['organic']:
             if 'price' in item and item['price'] != 0:  # Check for price key, removes false 0 prices
+                count += 1
+                total_price += item['price']
                 if item['price'] < lowest_price:
                     lowest_price = item['price']
                     lowest_price_item = item
+                    imgurl = item['url_image']
+
     # Check if any item with a price was found
     if lowest_price_item is not None:
-        return lowest_price_item['title'], lowest_price
+        average_price = round(total_price / count, 2) if count != 0 else 0
+        return lowest_price_item['title'], lowest_price, imgurl, average_price, count
     else:
-        return "No items found with a price", None
+        return "No items found with a price", None, None, None, count
 
 
-
-if __name__ == "__main__":
-    search_term = 'nirvana shirt'
+def run_search(search_term):
     api_response = call_api(search_term)
-    #pprint(api_response)
-    item_name, item_price = find_lowest_price_item(api_response)
-    print("Lowest price item:", item_name)
-    print("Price:", item_price)
+    name, price, imgurl, avg_price, count = find_lowest_price_item(api_response)
+    name_text = "Lowest price item: " + name
+    price_text = f"Price: ${price}"
+    avg_text = f"Average price: ${avg_price}"
+    count_text = f"{count} items checked"
+    return name_text, price_text, imgurl, avg_text, count_text
+
